@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 画板原型
 import { onMounted, ref, type Ref, reactive } from 'vue';
-import { initMap, drawLineHandler, drawPixelHandler } from '@/utils/draw'
+import { initMap, drawLineHandler, drawPixelHandler, exportCanvasToImg} from '@/utils/draw'
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 const settingData = reactive({
   width: 500, // 画板宽度
@@ -89,6 +89,7 @@ onMounted(() => {
 <template>
   <div class="draw-board">
     <div class="tool-bar">
+      <el-button class="export-btn" type="primary" @click="exportCanvasToImg(canvas as HTMLCanvasElement)">导出图片</el-button>
       <el-form>
         <el-form-item label="画板宽度:" title="不计入间隔线宽度">
           <el-input-number v-model="settingData.width" :min="2" :max="2000" @change="initBoard" :controls="false" />
@@ -127,6 +128,9 @@ onMounted(() => {
 <style lang="scss" scoped>
 .draw-board {
   display: flex;
+  .export-btn {
+    margin-bottom: 10px;
+  }
   .tool-bar {
     width: 150px;
     border: 1px solid rgb(101, 212, 156);
@@ -134,9 +138,9 @@ onMounted(() => {
     padding: 10px;
     height: 100%;
   }
-}
-#myCanvas {
-  border: 1px solid rgb(101, 212, 156);
-  border-color: v-bind('settingData.splitLineColor');
+  #myCanvas {
+    border: 1px solid rgb(101, 212, 156);
+    border-color: v-bind('settingData.splitLineColor');
+  }
 }
 </style>

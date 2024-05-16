@@ -213,3 +213,24 @@ export function mouseToGrid(setting:{hasLine: boolean, x: number, y: number, gri
     ];
   }
 }
+
+
+
+/**
+ * 将canvas导出为图片
+ * @param canvas 
+ */
+export function exportCanvasToImg(canvas: HTMLCanvasElement) {
+  // 导出 Canvas 为图片
+  const dataURL = canvas.toDataURL('image/png'); // 可以替换为 'image/jpeg' 等格式
+
+  // 创建一个链接元素
+  const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = 'canvas_image.png'; // 设置下载的文件名
+
+  // 将链接元素添加到页面，并模拟点击触发下载
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a); // 下载完成后移除链接元素
+}
