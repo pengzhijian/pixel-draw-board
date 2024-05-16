@@ -8,8 +8,30 @@ const settingData = reactive({
   height: 500, // 画板高度
   splitLineShow: true, // 是否显示间隔线 默认1px
   gridPerPx: 20, // 像素格大小
+  color: "rgba(255, 215, 0, 1)", // 画笔颜色
+  splitLineColor: "rgba(222, 222, 222)", // 间隔线颜色
+  drawMode: 'pixel', // 画笔模式 默认像素
 })
-
+// 颜色预定义
+const predefineColors = ref([
+  'rgba(0, 0, 0, 1)',
+  'rgba(255, 255, 255, 1)',
+  "rgba(222, 222, 222)",
+  '#ff4500',
+  '#ff8c00',
+  '#ffd700',
+  '#90ee90',
+  '#00ced1',
+  '#1e90ff',
+  '#c71585',
+  'rgba(255, 69, 0, 0.68)',
+  'rgb(255, 120, 0)',
+  'hsv(51, 100, 98)',
+  'hsva(120, 40, 94, 0.5)',
+  'hsl(181, 100%, 37%)',
+  'hsla(209, 100%, 56%, 0.73)',
+  '#c7158577',
+])
 const handleList: any[] = []
 
 function initBoard() {
@@ -18,19 +40,32 @@ function initBoard() {
       width: settingData.width,
       height: settingData.height,
       gridPerPx: settingData.gridPerPx,
-      lineColor: "rgba(222, 222, 222)",
+      lineColor: settingData.splitLineColor,
       lineShow: settingData.splitLineShow
     })
-    // drawLineHandler(canvas.value, {
-    //   gridPerPx: 80,
-    //   lineColor: "rgba(101, 212, 156)"
-    // })
+    initDrawPan()
+  }
+}
+// 初始化画笔
+function initDrawPan() {
+  if (canvas.value) {
+    // 先清除之前的注册事件
     removeHandler(canvas.value)
-    const handle = drawPixelHandler(canvas.value, {
-      hasLine: settingData.splitLineShow,
-      gridPerPx: settingData.gridPerPx,
-      pixelColor: "yellow"
-    })
+    const mode = settingData.drawMode
+    let handle: any;
+    if (mode === 'pixel') {
+      // 注册画笔事件
+      handle = drawPixelHandler(canvas.value, {
+        hasLine: settingData.splitLineShow,
+        gridPerPx: settingData.gridPerPx,
+        pixelColor: settingData.color
+      })
+    } else if (mode === 'line') {
+      handle = drawLineHandler(canvas.value, {
+        gridPerPx: settingData.gridPerPx,
+        lineColor: settingData.color
+      })
+    }
     handleList.push(handle)
   }
 }
@@ -56,16 +91,32 @@ onMounted(() => {
     <div class="tool-bar">
       <el-form>
         <el-form-item label="画板宽度:" title="不计入间隔线宽度">
-          <el-input-number v-model="settingData.width" :min="1" :max="2000" @change="initBoard" :controls="false" />
+          <el-input-number v-model="settingData.width" :min="2" :max="2000" @change="initBoard" :controls="false" />
         </el-form-item>
         <el-form-item label="画板高度:" title="不计入间隔线宽度">
-          <el-input-number v-model="settingData.height" :min="1" :max="2000" @change="initBoard" :controls="false" />
+          <el-input-number v-model="settingData.height" :min="2" :max="2000" @change="initBoard" :controls="false" />
         </el-form-item>
         <el-form-item label="像素格大小:">
-          <el-input-number v-model="settingData.gridPerPx" :min="1" :max="2000" @change="initBoard" :controls="false" />
+          <el-input-number v-model="settingData.gridPerPx" :min="2" :max="2000" @change="initBoard" :controls="false" />
         </el-form-item>
         <el-form-item label="显示间隔线:">
           <el-switch v-model="settingData.splitLineShow" @change="initBoard" />
+        </el-form-item>
+        <el-form-item label="间隔线颜色:">
+          <el-color-picker v-model="settingData.splitLineColor" show-alpha :predefine="predefineColors" @change="initBoard()" />
+        </el-form-item>
+        <el-form-item label="画笔颜色:">
+          <el-color-picker v-model="settingData.color" show-alpha :predefine="predefineColors" @change="initDrawPan()" />
+        </el-form-item>
+        <el-form-item label="画笔模式:">
+          <el-select
+            v-model="settingData.drawMode"
+            placeholder="Select"
+            @change="initDrawPan()"
+          >
+            <el-option label="像素" value="pixel"/>
+            <el-option label="直线" value="line"/>
+          </el-select>
         </el-form-item>
       </el-form>
     </div>
@@ -86,5 +137,6 @@ onMounted(() => {
 }
 #myCanvas {
   border: 1px solid rgb(101, 212, 156);
+  border-color: v-bind('settingData.splitLineColor');
 }
 </style>
