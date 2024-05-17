@@ -1,4 +1,4 @@
-import { type ReactPositionInfo } from '@/type/draw.type.ts'
+import { type ReactPositionInfo } from '@/type/draw.type'
 /**
  * 初始化画布
  * @constructor

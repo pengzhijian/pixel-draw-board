@@ -2,7 +2,7 @@
 // 画板原型
 import { onMounted, ref, type Ref, reactive } from 'vue';
 import { initMap, drawLineHandler, drawPixelHandler, exportCanvasToImg, uploadImgToCanvas, changeImageDataToPixel } from '@/utils/draw'
-import { type ReactPositionInfo } from '@/type/draw.type.ts'
+import { type ReactPositionInfo } from '@/type/draw.type'
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 const settingData = reactive({
   width: 500, // 画板宽度
