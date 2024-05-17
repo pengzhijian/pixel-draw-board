@@ -68,7 +68,7 @@ export function initMap(canvas: HTMLCanvasElement,setting: { width: number, heig
       }
     })
   }
-  
+
 }
 
 /**
@@ -138,7 +138,7 @@ export function drawLineHandler(canvas: HTMLCanvasElement, setting: {gridPerPx: 
  * @params { number[][] } rectPosArr 存储格子坐标信息
  * 
 */
-export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: boolean, gridPerPx: number, pixelColor: string, rectPosArr: ReactPositionInfo[][] }) {
+export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: boolean, gridPerPx: number, pixelColor: string, rectPosArr: (ReactPositionInfo | null)[][] }) {
   const { hasLine, gridPerPx, pixelColor, rectPosArr } = setting;
   let startMove = false; // 鼠标是否按下
   let lastX = 0; // 鼠标按下时的横坐标
@@ -150,14 +150,20 @@ export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: 
     lastX = e.offsetX;
     lastY = e.offsetY;
     const [gridX, gridY] = mouseToGrid({x:lastX, y:lastY, gridPerPx, hasLine});
-    reactArr.push({x:gridX, y:gridY})
-
     // 将坐标信息存储到数组中
     if (!rectPosArr[gridX]) {
       rectPosArr[gridX] = []
     }
-    rectPosArr[gridX][gridY] = {x:gridX, y:gridY, color:pixelColor }
-    drawRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
+    // 单点如果点击的位置已经有颜色，且和之前的相同，则清除
+    if (rectPosArr[gridX][gridY]?.color === pixelColor) {
+      rectPosArr[gridX][gridY] = null
+      clearRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
+    } else {
+      rectPosArr[gridX][gridY] = {x:gridX, y:gridY, color:pixelColor }
+      reactArr.push({x:gridX, y:gridY})
+      drawRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
+    }
+
   }
   canvas.addEventListener("mousedown", onMouseDownFun)
 
@@ -165,18 +171,18 @@ export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: 
     if (startMove) {
       const [gridX, gridY] = mouseToGrid({x:e.offsetX, y:e.offsetY, gridPerPx, hasLine});
       if (!reactArr.some(item => item.x === gridX && item.y === gridY)) {
-        reactArr.push({x:gridX, y:gridY})
 
         // 将坐标信息存储到数组中
         if (!rectPosArr[gridX]) {
           rectPosArr[gridX] = []
         }
         rectPosArr[gridX][gridY] = {x:gridX, y:gridY, color:pixelColor}
+        reactArr.push({x:gridX, y:gridY})
         drawRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
       }
     }
   }
-  canvas.addEventListener("mousemove", onMouseMoveFun)
+  canvas.addEventListener("mousemove", onMouseMoveFun, true)
 
   const onMouseUpFun = (e: MouseEvent) => {
     startMove = false;
@@ -212,6 +218,36 @@ export function drawRect(canvas: HTMLCanvasElement, setting: { hasLine: boolean,
     );
   } else {
     ctx.fillRect(
+      (gridPerPx) * (x - 1),
+      (gridPerPx) * (y - 1),
+      gridPerPx,
+      gridPerPx
+    );
+  }
+}
+
+/**
+ * 在第几格第几列清除一个矩形
+ * @constructor
+ * @params { HTMLCanvasElement } canvas 画布对象
+ * @params { number } x 第几格
+ * @params { number } y 第几列
+ * @params { string } color 矩形颜色
+ * 
+*/
+export function clearRect(canvas: HTMLCanvasElement, setting: { hasLine: boolean, x:number, y:number, gridPerPx:number, color:string}) {
+  const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const { hasLine, x, y, gridPerPx, color } = setting;
+  ctx.fillStyle = color;
+  if (hasLine) {
+    ctx.clearRect(
+      (gridPerPx + 1) * (x - 1),
+      (gridPerPx + 1) * (y - 1),
+      gridPerPx - 1,
+      gridPerPx - 1
+    );
+  } else {
+    ctx.clearRect(
       (gridPerPx) * (x - 1),
       (gridPerPx) * (y - 1),
       gridPerPx,
