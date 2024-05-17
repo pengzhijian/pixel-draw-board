@@ -2,6 +2,7 @@
 // 画板原型
 import { onMounted, ref, type Ref, reactive } from 'vue';
 import { initMap, drawLineHandler, drawPixelHandler, exportCanvasToImg} from '@/utils/draw'
+import { type ReactPositionInfo } from '@/type/draw.type.ts'
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 const settingData = reactive({
   width: 500, // 画板宽度
@@ -34,6 +35,10 @@ const predefineColors = ref([
 ])
 const handleList: any[] = []
 
+// 存储已画了的格子信息,只处理像素模式，线条模式不存储
+const rectPosArr: ReactPositionInfo[][] = []
+
+// 初始化画板
 function initBoard() {
   if (canvas.value) {
     initMap(canvas.value, {
@@ -41,11 +46,13 @@ function initBoard() {
       height: settingData.height,
       gridPerPx: settingData.gridPerPx,
       lineColor: settingData.splitLineColor,
-      lineShow: settingData.splitLineShow
+      lineShow: settingData.splitLineShow,
+      rectPosArr: rectPosArr
     })
     initDrawPan()
   }
 }
+
 // 初始化画笔
 function initDrawPan() {
   if (canvas.value) {
@@ -58,7 +65,8 @@ function initDrawPan() {
       handle = drawPixelHandler(canvas.value, {
         hasLine: settingData.splitLineShow,
         gridPerPx: settingData.gridPerPx,
-        pixelColor: settingData.color
+        pixelColor: settingData.color,
+        rectPosArr: rectPosArr
       })
     } else if (mode === 'line') {
       handle = drawLineHandler(canvas.value, {
@@ -67,6 +75,19 @@ function initDrawPan() {
       })
     }
     handleList.push(handle)
+  }
+}
+
+function cleanBoard() {
+  if (canvas.value) {
+    initMap(canvas.value, {
+      width: settingData.width,
+      height: settingData.height,
+      gridPerPx: settingData.gridPerPx,
+      lineColor: settingData.splitLineColor,
+      lineShow: settingData.splitLineShow
+    })
+    initDrawPan()
   }
 }
 
@@ -79,7 +100,6 @@ function removeHandler(canvas: HTMLCanvasElement) {
     canvas.removeEventListener("mousemove", handle.onMouseMoveFun)
     canvas.removeEventListener("mouseup", handle.onMouseUpFun)
   })
-
 }
 onMounted(() => {
   initBoard()
@@ -90,6 +110,7 @@ onMounted(() => {
   <div class="draw-board">
     <div class="tool-bar">
       <el-button class="export-btn" type="primary" @click="exportCanvasToImg(canvas as HTMLCanvasElement)">导出图片</el-button>
+      <el-button class="export-btn" type="danger" @click="cleanBoard">清空画布</el-button>
       <el-form>
         <el-form-item label="画板宽度:" title="不计入间隔线宽度">
           <el-input-number v-model="settingData.width" :min="2" :max="2000" @change="initBoard" :controls="false" />
@@ -130,6 +151,7 @@ onMounted(() => {
   display: flex;
   .export-btn {
     margin-bottom: 10px;
+    margin-left: 12px;
   }
   .tool-bar {
     width: 150px;

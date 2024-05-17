@@ -1,3 +1,4 @@
+import { type ReactPositionInfo } from '@/type/draw.type.ts'
 /**
  * 初始化画布
  * @constructor
@@ -7,54 +8,67 @@
  * @params { number } gridPerPx 每个格子的像素大小
  * @params { string } lineColor 线条颜色
  * @params { boolean } showLine 是否显示间隔线条
+ * @params { string } pixelColor 像素颜色
+ * @params { number[][] } rectPosArr 存储格子坐标信息
 */
-export function initMap(canvas: HTMLCanvasElement,setting: { width: number, height: number, gridPerPx: number, lineColor: string, lineShow: boolean}) {
+export function initMap(canvas: HTMLCanvasElement,setting: { width: number, height: number, gridPerPx: number, lineColor: string, lineShow: boolean, rectPosArr?: ReactPositionInfo[][] }) {
   if (!canvas) return;
-  const { width, height, gridPerPx, lineColor, lineShow } = setting;
+  const { width, height, gridPerPx, lineColor, lineShow, rectPosArr } = setting;
   canvas.width = width;
   canvas.height = height;
-  if (!lineShow) return;
-  const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-  // 开始路径并绘制线条
-  ctx.beginPath();
+  if (lineShow) {
+    const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+    // 开始路径并绘制线条
+    ctx.beginPath();
+    
+    // 格子数不一定能被整除，所以要补上缺的宽高使其能整除
+    const widthLineNum = canvas.width / gridPerPx - 1; // 横向线条数量
+    if (canvas.width % gridPerPx == 0) {
+      canvas.width += widthLineNum
+    } else {
+      canvas.width += widthLineNum + (gridPerPx - (canvas.width % gridPerPx));
+    }
+    // 竖向线条数量
+    const heightLineNum = canvas.height / gridPerPx - 1;
+    if (canvas.height % gridPerPx == 0) {
+      canvas.height += heightLineNum;
+    } else {
+      canvas.height += heightLineNum + (gridPerPx - (canvas.height % gridPerPx));
+    }
   
-  // 格子数不一定能被整除，所以要补上缺的宽高使其能整除
-  const widthLineNum = canvas.width / gridPerPx - 1; // 横向线条数量
-  if (canvas.width % gridPerPx == 0) {
-    canvas.width += widthLineNum
-  } else {
-    canvas.width += widthLineNum + (gridPerPx - (canvas.width % gridPerPx));
-  }
-  // 竖向线条数量
-  const heightLineNum = canvas.height / gridPerPx - 1;
-  if (canvas.height % gridPerPx == 0) {
-    canvas.height += heightLineNum;
-  } else {
-    canvas.height += heightLineNum + (gridPerPx - (canvas.height % gridPerPx));
-  }
-
-  // 设置线条样式
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = lineColor;
-  ctx.fillStyle = lineColor;
-  // 开始绘制横线
-  for (let i = 0; i < heightLineNum; i++) {
-    // 注意要算线的宽度，也就是后面那个+i
-    ctx.moveTo(0, gridPerPx * (i + 1) + i);
-    ctx.lineTo(canvas.width, gridPerPx * (i + 1) + i);
-    ctx.stroke();
-  }
-  // 开始绘制竖线
-  for (let i = 0; i < widthLineNum; i++) {
-    ctx.moveTo(gridPerPx * (i + 1) + i, 0);
-    ctx.lineTo(gridPerPx * (i + 1) + i, canvas.height);
-    ctx.stroke();
+    // 设置线条样式
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = lineColor;
+    ctx.fillStyle = lineColor;
+    // 开始绘制横线
+    for (let i = 0; i < heightLineNum; i++) {
+      // 注意要算线的宽度，也就是后面那个+i
+      ctx.moveTo(0, gridPerPx * (i + 1) + i);
+      ctx.lineTo(canvas.width, gridPerPx * (i + 1) + i);
+      ctx.stroke();
+    }
+    // 开始绘制竖线
+    for (let i = 0; i < widthLineNum; i++) {
+      ctx.moveTo(gridPerPx * (i + 1) + i, 0);
+      ctx.lineTo(gridPerPx * (i + 1) + i, canvas.height);
+      ctx.stroke();
+    }
   }
 
-  return {
-    widthLineNum: widthLineNum,
-    heightLineNum: heightLineNum
+  // 如果有传格子的坐标信息，则绘制格子
+  if (rectPosArr) {
+    rectPosArr.forEach(item => {
+      if (item) {
+        item.forEach(rect => {
+          if (rect) {
+            console.log(rect)
+            drawRect(canvas, {hasLine: lineShow, x: rect.x, y: rect.y, gridPerPx, color: rect.color});
+          }
+        })
+      }
+    })
   }
+  
 }
 
 /**
@@ -119,10 +133,13 @@ export function drawLineHandler(canvas: HTMLCanvasElement, setting: {gridPerPx: 
  * @params { HTMLCanvasElement } canvas 画布对象
  * @params { number } gridPerPx 每个格子的像素大小
  * @params { string } lineColor 线条颜色
+ * @params { boolean } hasLine 是否显示间隔线条
+ * @params { string } pixelColor 像素颜色
+ * @params { number[][] } rectPosArr 存储格子坐标信息
  * 
 */
-export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: boolean, gridPerPx: number, pixelColor: string}) {
-  const { hasLine, gridPerPx, pixelColor } = setting;
+export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: boolean, gridPerPx: number, pixelColor: string, rectPosArr: ReactPositionInfo[][] }) {
+  const { hasLine, gridPerPx, pixelColor, rectPosArr } = setting;
   let startMove = false; // 鼠标是否按下
   let lastX = 0; // 鼠标按下时的横坐标
   let lastY = 0; // 鼠标按下时的纵坐标
@@ -134,6 +151,12 @@ export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: 
     lastY = e.offsetY;
     const [gridX, gridY] = mouseToGrid({x:lastX, y:lastY, gridPerPx, hasLine});
     reactArr.push({x:gridX, y:gridY})
+
+    // 将坐标信息存储到数组中
+    if (!rectPosArr[gridX]) {
+      rectPosArr[gridX] = []
+    }
+    rectPosArr[gridX][gridY] = {x:gridX, y:gridY, color:pixelColor }
     drawRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
   }
   canvas.addEventListener("mousedown", onMouseDownFun)
@@ -143,6 +166,12 @@ export function drawPixelHandler(canvas: HTMLCanvasElement, setting: { hasLine: 
       const [gridX, gridY] = mouseToGrid({x:e.offsetX, y:e.offsetY, gridPerPx, hasLine});
       if (!reactArr.some(item => item.x === gridX && item.y === gridY)) {
         reactArr.push({x:gridX, y:gridY})
+
+        // 将坐标信息存储到数组中
+        if (!rectPosArr[gridX]) {
+          rectPosArr[gridX] = []
+        }
+        rectPosArr[gridX][gridY] = {x:gridX, y:gridY, color:pixelColor}
         drawRect(canvas, {hasLine, x: gridX, y: gridY, gridPerPx, color:pixelColor});
       }
     }
@@ -200,7 +229,6 @@ export function drawRect(canvas: HTMLCanvasElement, setting: { hasLine: boolean,
 */
 export function mouseToGrid(setting:{hasLine: boolean, x: number, y: number, gridPerPx: number}) {
   const { x, y, gridPerPx, hasLine } = setting;
-  console.log(setting)
   if (!hasLine) {
     return [
       Math.floor(x / gridPerPx) + 1,
