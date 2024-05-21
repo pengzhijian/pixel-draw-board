@@ -9,11 +9,13 @@ const settingData = reactive({
   height: 500, // 画板高度
   gridWidth: 20, // 画板网格宽度
   gridHeight: 20, // 画板网格高度
-  splitLineShow: true, // 是否显示间隔线 默认1px
+  splitLineShow: false, // 是否显示间隔线 默认1px
   color: "rgba(255, 215, 0, 1)", // 画笔颜色
   splitLineColor: "rgba(222, 222, 222)", // 间隔线颜色
   drawMode: 'pixel', // 画笔模式 默认像素
-  uploadImgFile: [] as any // 上传的图片
+  uploadImgFile: [] as any, // 上传的图片
+  gap: 6, // 每隔几个像素检测一次，值越大越快，画的像素点越少
+  imageData: null as any, // 上传的图片数据
 })
 // 存储已画了的格子信息,只处理像素模式，线条模式不存储
 let rectPosArr: ReactPositionInfo[][] = []
@@ -103,8 +105,19 @@ function cleanBoard() {
  */
 function changePixelData() {
   if (canvas.value) {
+    // 如果有上传图片，则先清空存储的图片信息
+    // 这两步操作是为了后续处理的图片都是一开始上传的图片数据，而不是在处理过后的canvas数据上继续处理
+    if (settingData.uploadImgFile.length > 0) {
+      settingData.imageData = null
+    }
     // 将图片信息转为像素信息
-    const pixelData = changeImageDataToPixel(canvas.value, { gap: 6, gridWidth: 8, gridHeight: 2 });
+    let pixelData = changeImageDataToPixel(canvas.value, { gap: settingData.gap, gridWidth: settingData.gridWidth, gridHeight: settingData.gridHeight, imgPixelData: settingData.imageData });
+    // 清空上传文件
+    if (settingData.uploadImgFile.length > 0) {
+      // 然后再将图片数据保存，后续就是用这个数据进行图片处理
+      settingData.imageData = pixelData.imageData;
+      settingData.uploadImgFile = [];
+    }
     // 先改基础配置
     settingData.width = pixelData.width;
     settingData.height = pixelData.height;
@@ -114,8 +127,6 @@ function changePixelData() {
     rectPosArr = pixelData.rectPosArr;
     // 重画画板
     initBoard();
-    // 清空上传文件
-    settingData.uploadImgFile = []
   }
 }
 
@@ -146,6 +157,12 @@ function removeHandler(canvas: HTMLCanvasElement) {
   })
 }
 
+function changeTab() {
+  settingData.splitLineShow = false;
+  initBoard();
+  console.log("change tab")
+}
+
 onMounted(() => {
   initBoard()
 })
@@ -153,7 +170,7 @@ onMounted(() => {
 
 <template>
   <div class="draw-board">
-    <el-tabs class="tool-bar">
+    <el-tabs class="tool-bar" @tab-click="changeTab">
       <el-tab-pane label="像素绘画">
         <div class="btns-box">
           <el-button size="small" class="export-btn" type="primary" @click="exportCanvasToImg(canvas as HTMLCanvasElement)">导出图片</el-button>
@@ -202,6 +219,26 @@ onMounted(() => {
         >
           <el-button size="small" class="export-btn" type="primary">导入图片</el-button>
         </el-upload>
+        <el-form>
+          <el-form-item label="检测间隔:">
+            <el-input-number v-model="settingData.gap" :min="1" controls-position="right" @change="changePixelData()" />
+          </el-form-item>
+          <el-form-item>
+            <el-slider :min="1" :max="100" class="slider" v-model="settingData.gap" @change="changePixelData()" />
+          </el-form-item>
+          <el-form-item label="像素宽度:">
+            <el-input-number v-model="settingData.gridWidth" :min="1" controls-position="right" @change="changePixelData()" />
+          </el-form-item>
+          <el-form-item>
+            <el-slider :min="1" :max="100" class="slider" v-model="settingData.gridWidth" @change="changePixelData()" />
+          </el-form-item>
+          <el-form-item label="像素高度:">
+            <el-input-number v-model="settingData.gridHeight" :min="1" controls-position="right" @change="changePixelData()" />
+          </el-form-item>
+          <el-form-item>
+            <el-slider :min="1" :max="100" class="slider" v-model="settingData.gridHeight" @change="changePixelData()" />
+          </el-form-item>
+        </el-form>
       </el-tab-pane>
     </el-tabs>
     <!-- 不套这一层不知道为什么会导致画布高度不对，和flex有冲突 -->
@@ -236,5 +273,9 @@ onMounted(() => {
     border-color: v-bind('settingData.splitLineColor');
     flex: none
   }
+}
+.slider {
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px solid #ccc;
 }
 </style>

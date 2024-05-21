@@ -339,11 +339,16 @@ export function uploadImgToCanvas(e: any, canvas: HTMLCanvasElement, callback: F
  * @param gap 每隔几个像素检测一次，值越大越快，画的像素点越少
  * @param gridWidth 画的像素宽度
  * @param gridHeight 画的像素高度
+ * @param imgPixelData 图片像素数据
  */
-export function changeImageDataToPixel(canvas: HTMLCanvasElement, setting: { gap: number , gridWidth: number, gridHeight: number } = { gap: 3, gridWidth: 1, gridHeight: 1 }) {
-  const { gap, gridWidth, gridHeight } = setting
+export function changeImageDataToPixel(canvas: HTMLCanvasElement, setting: { gap: number , gridWidth: number, gridHeight: number, imgPixelData?: ImageData } = { gap: 3, gridWidth: 1, gridHeight: 1 }) {
+  const { gap, gridWidth, gridHeight, imgPixelData } = setting
   const ctx:CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D;
-  const imageData: ImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let imageData: ImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  // 如果是二次修改图片，图片用的是直接传过来的数据
+  if (imgPixelData) {
+    imageData = imgPixelData
+  }
   const rectPosArr: ReactPositionInfo[][] = []
   for (let i = 0; i < imageData.height; i += gap) {
     rectPosArr[i] = []
@@ -361,5 +366,6 @@ export function changeImageDataToPixel(canvas: HTMLCanvasElement, setting: { gap
       })
     }
   }
-  return {rectPosArr, width: imageData.width , height: imageData.height , gridWidth: gridWidth, gridHeight: gridHeight}
+  return {rectPosArr, width: imageData.width , height: imageData.height , gridWidth: gridWidth, gridHeight: gridHeight, imageData: imageData}
 }
+
