@@ -368,4 +368,25 @@ export function changeImageDataToPixel(canvas: HTMLCanvasElement, setting: { gap
   }
   return {rectPosArr, width: imageData.width , height: imageData.height , gridWidth: gridWidth, gridHeight: gridHeight, imageData: imageData}
 }
-
+/**
+ * 将图片数据转换为灰度图
+ */
+export function changeImageToGray(canvas: HTMLCanvasElement) {
+  const ctx:CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D;
+  const imageData: ImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  // 遍历所有像素，将颜色转换为灰度值
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    // 使用加权平均法计算灰度值
+    const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+    // 将RGB值设置为相同的灰度值
+    data[i] = gray;     // 红色通道
+    data[i + 1] = gray; // 绿色通道
+    data[i + 2] = gray; // 蓝色通道
+  }
+  // 将处理后的图像数据放回Canvas
+  ctx.putImageData(imageData, 0, 0);
+}
