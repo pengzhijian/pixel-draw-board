@@ -3,10 +3,20 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/drawBoard',
-      name: 'home',
-      component: () => import('@/views/demo/drawBoard/drawBoard.vue')
-    }
+      path: '/application',
+      name: 'application',
+      component: () => import('@/views/application/mainApplication.vue')
+    },
+    {
+      path: '/pixelDrawBoard',
+      name: 'pixelDrawBoard',
+      component: () => import('@/views/demo/pixelDrawBoard/pixelDrawBoard.vue')
+    },
+    {
+      path: '/drawBoardBase',
+      name: 'drawBoardBase',
+      component: () => import('@/views/demo/drawBoardBase/drawBoardBase.vue')
+    },
   ]
 })
 
