@@ -548,11 +548,11 @@ export function changeImageToMode(canvas: HTMLCanvasElement, modeName: string) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    let colorValue = Math.max(r, g, b) + Math.min(r, g, b)
-    const sortArr = [r, g, b].sort()
-    const max = sortArr[2]
-    const min = sortArr[0]
-    const center = sortArr[1]
+    let colorValue = Math.max(r, g, b) + Math.min(r, g, b);
+    const sortArr = [r, g, b].sort();
+    const max = sortArr[2];
+    const min = sortArr[0];
+    const center = sortArr[1];
     if (modeName === 'Hue') {
       // 色相（度）=原色色相（RGB最大值色相）+（-）（中间值-最小值）*60/（最大值-最小值）
       colorValue = max + ((center - min) * 60 / (max - min));
@@ -561,16 +561,16 @@ export function changeImageToMode(canvas: HTMLCanvasElement, modeName: string) {
       colorValue = (max - min) / max * 100;
     } else if (modeName === 'Lightness') {
       // 亮度=(最大值 /255)*100%
-      colorValue = max / 255 * 100
+      colorValue = max / 255 * 100;
     } else if (modeName === 'brightness') {
       // 明度：30%*R+59%*G+11%*B
-      colorValue = 0.3 * r + 0.59 * g + 0.11 * b
+      colorValue = 0.3 * r + 0.59 * g + 0.11 * b;
     } else if (modeName === 'Grayscale') {
       // 灰度=（最大值+最小值）/2
-      colorValue = (max + min) / 2
+      colorValue = (max + min) / 2;
     } else if (modeName === 'other') {
       // RGB颜色模型 （r+g）/2 - b 这个值越大就越暖，越小就越冷
-      colorValue = ((r + g) / 2 - b) * 100
+      colorValue = ((r + g) / 2 - b) * 100;
     }
     // 将RGB值设置为相同的灰度值
     data[i] = colorValue; // 红色通道
