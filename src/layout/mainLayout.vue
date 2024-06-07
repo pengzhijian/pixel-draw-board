@@ -8,7 +8,9 @@ const rightMenuShow = ref(true);
 <template>
   <div class="main-layout">
     <div class="top-bar">
-      
+      <el-button type="primary" @click="$router.push('/application')">正式程序</el-button>
+      <el-button type="primary" @click="$router.push('/drawBoardBase')">01绘制画板demo</el-button>
+      <el-button type="primary" @click="$router.push('/pixelDrawBoard')">02像素画demo</el-button>
     </div>
     <div class="bottom-box">
       <div class="left-bar" :class="{'left-menu-show': !leftMenuShow}">
