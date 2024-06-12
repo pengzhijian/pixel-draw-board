@@ -580,3 +580,87 @@ export function changeImageToMode(canvas: HTMLCanvasElement, modeName: string) {
   // 将处理后的图像数据放回Canvas
   ctx.putImageData(imageData, 0, 0);
 }
+
+
+type RulerSetting = {
+  unitLength: number;
+  majorTickLength: number;
+  minorTickLength: number;
+  globalAlpha: number;
+  translateX: number;
+  translateY: number;
+};
+/**
+ * 绘制标尺
+ * @param canvas 画布
+ * @param setting 标尺设置
+ * @param setting.unitLength 每个单位的长度
+ * @param setting.majorTickLength 主要刻度的长度
+ * @param setting.minorTickLength 次要刻度的长度
+ * @param setting.globalAlpha 透明度
+ * @param setting.translateX 平移的x轴距离
+ * @param setting.translateY 平移的y轴距离
+ */
+export function drawRulers(
+  canvas: HTMLCanvasElement,
+  setting: RulerSetting = {
+    unitLength: 10,
+    majorTickLength: 10,
+    minorTickLength: 5,
+    globalAlpha: 1,
+    translateX: 0,
+    translateY: 0,
+  }
+) {
+  const ctx: CanvasRenderingContext2D = canvas.getContext(
+    "2d"
+  ) as CanvasRenderingContext2D;
+  const {
+    unitLength,
+    majorTickLength,
+    minorTickLength,
+    globalAlpha,
+    translateX,
+    translateY,
+  } = setting;
+  // 设置透明度
+  ctx.globalAlpha = globalAlpha;
+  // 设置标尺属性
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#000";
+  ctx.font = "10px Arial";
+
+  // 绘制水平标尺
+  for (let i = translateX % unitLength; i < canvas.width; i += unitLength) {
+    // 绘制刻度
+    const nowPos = Math.floor((i + translateX) / unitLength);
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    if (nowPos % 10 === 0) {
+      ctx.lineTo(i, majorTickLength);
+      ctx.stroke();
+      ctx.fillText(nowPos * 10 + "", i + 2, majorTickLength + 10);
+    } else {
+      ctx.lineTo(i, minorTickLength);
+      ctx.stroke();
+    }
+  }
+
+  // 绘制垂直标尺
+  for (let i = translateY % unitLength; i < canvas.height; i += unitLength) {
+    // 绘制刻度
+    const nowPos = Math.floor((i + translateY) / unitLength);
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    if (nowPos % 10 === 0) {
+      ctx.lineTo(majorTickLength, i);
+      ctx.stroke();
+      ctx.fillText(nowPos * 10 + "", majorTickLength + 10, i + 2);
+    } else {
+      ctx.lineTo(minorTickLength, i);
+      ctx.stroke();
+    }
+  }
+}
