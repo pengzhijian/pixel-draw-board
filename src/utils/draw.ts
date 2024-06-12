@@ -623,43 +623,56 @@ export function drawRulers(
     translateX,
     translateY,
   } = setting;
+
+  const ruleWidth = 25;
+
   // 设置透明度
   ctx.globalAlpha = globalAlpha;
   // 设置标尺属性
   ctx.fillStyle = "#fff";
   ctx.strokeStyle = "#000";
+  ctx.fillRect(0, 0, ruleWidth, canvas.height);
+  ctx.fillRect(0, 0, canvas.width, ruleWidth);
   ctx.lineWidth = 1;
   ctx.fillStyle = "#000";
   ctx.font = "10px Arial";
-
+  // 平移画布
   // 绘制水平标尺
-  for (let i = translateX % unitLength; i < canvas.width; i += unitLength) {
+  for (let i = translateX % unitLength + ruleWidth; i < canvas.width; i += unitLength) {
     // 绘制刻度
-    const nowPos = Math.floor((i + translateX) / unitLength);
+    const nowPos = Math.floor((i + translateX - ruleWidth) / unitLength);
     ctx.beginPath();
-    ctx.moveTo(i, 0);
+    ctx.moveTo(i, ruleWidth);
     if (nowPos % 10 === 0) {
-      ctx.lineTo(i, majorTickLength);
+      ctx.lineTo(i, ruleWidth - majorTickLength);
       ctx.stroke();
-      ctx.fillText(nowPos * 10 + "", i + 2, majorTickLength + 10);
+      ctx.fillText(nowPos * 10 + "", i, 10);
     } else {
-      ctx.lineTo(i, minorTickLength);
+      ctx.lineTo(i, ruleWidth - minorTickLength);
       ctx.stroke();
     }
   }
 
   // 绘制垂直标尺
-  for (let i = translateY % unitLength; i < canvas.height; i += unitLength) {
+  for (let i = translateY % unitLength + ruleWidth; i < canvas.height; i += unitLength) {
     // 绘制刻度
-    const nowPos = Math.floor((i + translateY) / unitLength);
+    const nowPos = Math.floor((i + translateY - ruleWidth) / unitLength);
     ctx.beginPath();
-    ctx.moveTo(0, i);
+    ctx.moveTo(ruleWidth, i);
     if (nowPos % 10 === 0) {
-      ctx.lineTo(majorTickLength, i);
+      ctx.lineTo(ruleWidth - majorTickLength, i);
       ctx.stroke();
-      ctx.fillText(nowPos * 10 + "", majorTickLength + 10, i + 2);
+      // 保存当前状态
+      ctx.save();
+      // 移动画布原点到字符绘制位置
+      ctx.translate(10, i + 2);
+      // 旋转画布坐标系90度（逆时针）
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(nowPos * 10 + "", 0, 0);
+      // 恢复到之前的状态
+      ctx.restore();
     } else {
-      ctx.lineTo(minorTickLength, i);
+      ctx.lineTo(ruleWidth - minorTickLength, i);
       ctx.stroke();
     }
   }

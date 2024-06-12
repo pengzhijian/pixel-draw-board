@@ -64,8 +64,8 @@ const baseSetting = reactive({
 function drawAll(canvas: HTMLCanvasElement) {
   if (canvas) {
     drawContent(canvas, {
-      translateX: baseSetting.translateX,
-      translateY: baseSetting.translateY,
+      translateX: baseSetting.translateX + 25, // 这个25是标尺的宽度，如果标尺宽度改变这个也变
+      translateY: baseSetting.translateY + 25,
       scaleX: baseSetting.scaleX,
       scaleY: baseSetting.scaleY,
     });
