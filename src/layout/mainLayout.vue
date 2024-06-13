@@ -61,6 +61,13 @@ const baseSetting = reactive({
   scaleY: 1, // 缩放的y轴比例
 });
 
+/**
+ * 绘制画板
+ */
+function drawBoard(canvas: HTMLCanvasElement) {
+
+}
+
 function drawAll(canvas: HTMLCanvasElement) {
   if (canvas) {
     drawContent(canvas, {
@@ -347,6 +354,8 @@ onMounted(() => {
 .canvas-bg {
   border: 1px solid rgb(21, 172, 33);
   margin-left: 5px;
+  width: 100%;
+  height: 100%;
 }
 
 // 网格背景
