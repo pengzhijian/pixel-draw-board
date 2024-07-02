@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { drawRulers } from '@/utils/draw';
 import { onMounted, ref, type Ref, reactive } from "vue";
+import { useBaseSettingsStore } from '@/stores/counter';
 const bgCanvas: Ref<HTMLCanvasElement | null> = ref(null);
 const mainCanvas: Ref<HTMLCanvasElement | null> = ref(null);
+const baseSettingStore = useBaseSettingsStore();
 
 const leftMenuShow = ref(true);
 const rightMenuShow = ref(true);
@@ -36,6 +38,8 @@ function drawContent(
   const { translateX, translateY, scaleX, scaleY } = canvasSetting;
   // 先清空画布
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  
   // 保存当前画布状态
   ctx.save();
   // 设置平移和缩放
@@ -43,23 +47,30 @@ function drawContent(
   ctx.scale(scaleX, scaleY);
 
   // 进行一些绘画操作
-  ctx.fillStyle = "#007BFF";
-  ctx.fillRect(0, 0, 200, 150);
-  ctx.beginPath();
-  ctx.arc(400, 75, 50, 0, 2 * Math.PI);
-  ctx.stroke();
+  drawBaseBoard(canvas, baseSettingStore.baseBoardSetting);
 
   // 还原画布状态
   ctx.restore();
 }
 
-const baseSetting = reactive({
-  isCenterBtnOn: false, // 是否中键按下
-  translateX: 0, // 平移的x轴距离
-  translateY: 0, // 平移的y轴距离
-  scaleX: 1, // 缩放的x轴比例
-  scaleY: 1, // 缩放的y轴比例
-});
+
+/**
+ * 基础画板，保存只会显示基础画板中的内容
+ */
+type BaseBoardSetting = {
+  width: number; // 画布宽度
+  height: number; // 画布高度
+  x: number; // 画布x轴坐标
+  y: number; // 画布y轴坐标
+}
+function drawBaseBoard(canvas: HTMLCanvasElement, baseBoardSetting: BaseBoardSetting) {
+  const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const { x, y, width, height } = baseBoardSetting;
+  ctx.save();
+  ctx.fillStyle = "white";
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+}
 
 /**
  * 绘制画板
@@ -70,15 +81,17 @@ function drawBoard(canvas: HTMLCanvasElement) {
 
 function drawAll(canvas: HTMLCanvasElement) {
   if (canvas) {
+    // 基础画板始终显示在中间
+    baseSettingStore.baseBoardSetting.x = Math.floor(canvas.width / 2) - baseSettingStore.baseBoardSetting.width / 2;
     drawContent(canvas, {
-      translateX: baseSetting.translateX + 25, // 这个25是标尺的宽度，如果标尺宽度改变这个也变
-      translateY: baseSetting.translateY + 25,
-      scaleX: baseSetting.scaleX,
-      scaleY: baseSetting.scaleY,
+      translateX: baseSettingStore.baseSetting.translateX + 25, // 这个25是标尺的宽度，如果标尺宽度改变这个也变
+      translateY: baseSettingStore.baseSetting.translateY + 25,
+      scaleX: baseSettingStore.baseSetting.scaleX,
+      scaleY: baseSettingStore.baseSetting.scaleY,
     });
     drawRulers(canvas, {
-      translateX: baseSetting.translateX,
-      translateY: baseSetting.translateY,
+      translateX: baseSettingStore.baseSetting.translateX - baseSettingStore.baseBoardSetting.x,
+      translateY: baseSettingStore.baseSetting.translateY - baseSettingStore.baseBoardSetting.y,
       unitLength: 10,
       majorTickLength: 10,
       minorTickLength: 5,
@@ -94,9 +107,9 @@ function setMouseFun(canvas: HTMLCanvasElement) {
     canvas.addEventListener("mousedown", (e) => {
       if (e.button === 1) {
         // 1表示中键,检测鼠标中键按下
-        baseSetting.isCenterBtnOn = true;
-        startX = e.clientX - baseSetting.translateX;
-        startY = e.clientY - baseSetting.translateY;
+        baseSettingStore.baseSetting.isCenterBtnOn = true;
+        startX = e.clientX - baseSettingStore.baseSetting.translateX;
+        startY = e.clientY - baseSettingStore.baseSetting.translateY;
         // 更改光标样式
         canvas.style.cursor = "grabbing";
       }
@@ -104,23 +117,23 @@ function setMouseFun(canvas: HTMLCanvasElement) {
 
     canvas.addEventListener("mousemove", (e) => {
       // 检测鼠标中建按下，拖动画布
-      if (baseSetting.isCenterBtnOn) {
-        baseSetting.translateX = e.clientX - startX;
-        baseSetting.translateY = e.clientY - startY;
+      if (baseSettingStore.baseSetting.isCenterBtnOn) {
+        baseSettingStore.baseSetting.translateX = e.clientX - startX;
+        baseSettingStore.baseSetting.translateY = e.clientY - startY;
         drawAll(canvas);
       }
     });
 
     canvas.addEventListener("mouseup", (e) => {
       // 鼠标抬起中键松开
-      baseSetting.isCenterBtnOn = false;
+      baseSettingStore.baseSetting.isCenterBtnOn = false;
       // 恢复光标样式
       canvas.style.cursor = "default";
     });
 
     canvas.addEventListener("mouseleave", (e) => {
       // 鼠标离开画板中键松开
-      baseSetting.isCenterBtnOn = false;
+      baseSettingStore.baseSetting.isCenterBtnOn = false;
     });
 
     // 检测滚轮事件
@@ -130,12 +143,12 @@ function setMouseFun(canvas: HTMLCanvasElement) {
       // 鼠标滚轮实现放大缩小
       if (e.deltaY < 0) {
         // 放大
-        baseSetting.scaleX += scaleBaseValue;
-        baseSetting.scaleY += scaleBaseValue;
+        baseSettingStore.baseSetting.scaleX += scaleBaseValue;
+        baseSettingStore.baseSetting.scaleY += scaleBaseValue;
       } else {
         // 缩小
-        baseSetting.scaleX -= scaleBaseValue;
-        baseSetting.scaleY -= scaleBaseValue;
+        baseSettingStore.baseSetting.scaleX -= scaleBaseValue;
+        baseSettingStore.baseSetting.scaleY -= scaleBaseValue;
       }
       drawAll(canvas);
     });

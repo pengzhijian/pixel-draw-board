@@ -6,6 +6,7 @@ const resizeObserver = (el: any, callback: any) => {
     console.log('7777', timer);
     const canvas = el.getElementsByTagName("canvas")[0];
     const ctx = canvas.getContext("2d");
+    ctx.reset();
     // 节流，只变最后一次
     canvas.style.width = 'calc(100% - 10px)';
     canvas.style.height = '100%';
@@ -21,7 +22,6 @@ const resizeObserver = (el: any, callback: any) => {
       canvas.style.height = 'unset';
       if (callback) {
         console.log("回调！！！");
-        ctx.reset();
         callback(canvas);
       }
     }, 200);
