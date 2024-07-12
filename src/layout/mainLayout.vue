@@ -1,115 +1,26 @@
 <script setup lang="ts">
-import { drawRulers } from '@/utils/draw';
-import { onMounted, ref, type Ref, reactive } from "vue";
-import { useBaseSettingsStore } from '@/stores/counter';
+import { onMounted, ref, type Ref } from "vue";
+import { useBaseSettingsStore } from '@/stores/base';
+import { deepCopy } from "@/utils/util";
+import rightBar from './components/rightBar.vue';
 const bgCanvas: Ref<HTMLCanvasElement | null> = ref(null);
-const mainCanvas: Ref<HTMLCanvasElement | null> = ref(null);
 const baseSettingStore = useBaseSettingsStore();
+
+const renderAll = baseSettingStore.renderAll;
 
 const leftMenuShow = ref(true);
 const rightMenuShow = ref(true);
-type CanvasSetting = {
-  translateX: number;
-  translateY: number;
-  scaleX: number;
-  scaleY: number;
-};
-/**
- * 绘制内容
- * @param canvas 画布
- * @param canvasSetting 画布设置
- * @param canvasSetting.translateX 平移的x轴距离
- * @param canvasSetting.translateY 平移的y轴距离
- * @param canvasSetting.scaleX 缩放的x轴比例
- * @param canvasSetting.scaleY 缩放的y轴比例
- */
-function drawContent(
-  canvas: HTMLCanvasElement,
-  canvasSetting: CanvasSetting = {
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1,
-    scaleY: 1,
-  }
-) {
-  const ctx: CanvasRenderingContext2D = canvas.getContext(
-    "2d"
-  ) as CanvasRenderingContext2D;
-  const { translateX, translateY, scaleX, scaleY } = canvasSetting;
-  // 先清空画布
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  
-  // 保存当前画布状态
-  ctx.save();
-  // 设置平移和缩放
-  ctx.translate(translateX, translateY);
-  ctx.scale(scaleX, scaleY);
-
-  // 进行一些绘画操作
-  drawBaseBoard(canvas, baseSettingStore.baseBoardSetting);
-
-  // 还原画布状态
-  ctx.restore();
-}
-
-
-/**
- * 基础画板，保存只会显示基础画板中的内容
- */
-type BaseBoardSetting = {
-  width: number; // 画布宽度
-  height: number; // 画布高度
-  x: number; // 画布x轴坐标
-  y: number; // 画布y轴坐标
-}
-function drawBaseBoard(canvas: HTMLCanvasElement, baseBoardSetting: BaseBoardSetting) {
-  const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-  const { x, y, width, height } = baseBoardSetting;
-  ctx.save();
-  ctx.fillStyle = "white";
-  ctx.fillRect(x, y, width, height);
-  ctx.restore();
-}
-
-/**
- * 绘制画板
- */
-function drawBoard(canvas: HTMLCanvasElement) {
-
-}
-
-function drawAll(canvas: HTMLCanvasElement) {
-  if (canvas) {
-    // 基础画板始终显示在中间
-    baseSettingStore.baseBoardSetting.x = Math.floor(canvas.width / 2) - baseSettingStore.baseBoardSetting.width / 2;
-    drawContent(canvas, {
-      translateX: baseSettingStore.baseSetting.translateX + 25, // 这个25是标尺的宽度，如果标尺宽度改变这个也变
-      translateY: baseSettingStore.baseSetting.translateY + 25,
-      scaleX: baseSettingStore.baseSetting.scaleX,
-      scaleY: baseSettingStore.baseSetting.scaleY,
-    });
-    drawRulers(canvas, {
-      translateX: baseSettingStore.baseSetting.translateX - baseSettingStore.baseBoardSetting.x,
-      translateY: baseSettingStore.baseSetting.translateY - baseSettingStore.baseBoardSetting.y,
-      unitLength: 10,
-      majorTickLength: 10,
-      minorTickLength: 5,
-      globalAlpha: 1,
-    });
-  }
-}
 
 function setMouseFun(canvas: HTMLCanvasElement) {
   if (canvas) {
-    drawAll(canvas);
+    renderAll();
     let startX: number, startY: number;
     canvas.addEventListener("mousedown", (e) => {
       if (e.button === 1) {
         // 1表示中键,检测鼠标中键按下
-        baseSettingStore.baseSetting.isCenterBtnOn = true;
-        startX = e.clientX - baseSettingStore.baseSetting.translateX;
-        startY = e.clientY - baseSettingStore.baseSetting.translateY;
+        baseSettingStore.baseBoardSetting.isCenterBtnOn = true;
+        startX = e.clientX - baseSettingStore.baseBoardSetting.translateX;
+        startY = e.clientY - baseSettingStore.baseBoardSetting.translateY;
         // 更改光标样式
         canvas.style.cursor = "grabbing";
       }
@@ -117,23 +28,23 @@ function setMouseFun(canvas: HTMLCanvasElement) {
 
     canvas.addEventListener("mousemove", (e) => {
       // 检测鼠标中建按下，拖动画布
-      if (baseSettingStore.baseSetting.isCenterBtnOn) {
-        baseSettingStore.baseSetting.translateX = e.clientX - startX;
-        baseSettingStore.baseSetting.translateY = e.clientY - startY;
-        drawAll(canvas);
+      if (baseSettingStore.baseBoardSetting.isCenterBtnOn) {
+        baseSettingStore.baseBoardSetting.translateX = e.clientX - startX;
+        baseSettingStore.baseBoardSetting.translateY = e.clientY - startY;
+        renderAll();
       }
     });
 
     canvas.addEventListener("mouseup", (e) => {
       // 鼠标抬起中键松开
-      baseSettingStore.baseSetting.isCenterBtnOn = false;
+      baseSettingStore.baseBoardSetting.isCenterBtnOn = false;
       // 恢复光标样式
       canvas.style.cursor = "default";
     });
 
     canvas.addEventListener("mouseleave", (e) => {
       // 鼠标离开画板中键松开
-      baseSettingStore.baseSetting.isCenterBtnOn = false;
+      baseSettingStore.baseBoardSetting.isCenterBtnOn = false;
     });
 
     // 检测滚轮事件
@@ -143,20 +54,23 @@ function setMouseFun(canvas: HTMLCanvasElement) {
       // 鼠标滚轮实现放大缩小
       if (e.deltaY < 0) {
         // 放大
-        baseSettingStore.baseSetting.scaleX += scaleBaseValue;
-        baseSettingStore.baseSetting.scaleY += scaleBaseValue;
+        baseSettingStore.baseBoardSetting.scaleX += scaleBaseValue;
+        baseSettingStore.baseBoardSetting.scaleY += scaleBaseValue;
       } else {
         // 缩小
-        baseSettingStore.baseSetting.scaleX -= scaleBaseValue;
-        baseSettingStore.baseSetting.scaleY -= scaleBaseValue;
+        baseSettingStore.baseBoardSetting.scaleX -= scaleBaseValue;
+        baseSettingStore.baseBoardSetting.scaleY -= scaleBaseValue;
       }
-      drawAll(canvas);
+      renderAll();
     });
   }
 }
 
 onMounted(() => {
   if (bgCanvas.value) {
+    baseSettingStore.baseBoardSetting.canvas = bgCanvas.value;
+    baseSettingStore.baseBoardSettingStart = deepCopy(baseSettingStore.baseBoardSetting);
+    baseSettingStore.baseBoardSettingStart.canvas = bgCanvas.value;
     setMouseFun(bgCanvas.value);
   }
 });
@@ -181,12 +95,12 @@ onMounted(() => {
         </div>
       </div>
       <div class="main-content">
-        <div class="bg-canvas-box" v-canvas-resize="drawAll">
+        <div class="bg-canvas-box" v-canvas-resize="renderAll">
           <canvas ref="bgCanvas" class="canvas-bg design-stage-grid"></canvas>
         </div>
       </div>
       <div class="right-bar" :class="{ 'right-menu-show': !rightMenuShow }">
-        aaaaaaaaaaaaaaaaaaaa
+        <right-bar></right-bar>
         <div class="menu-toggle-bar" :class="{ 'menu-toggle-no-bar': !rightMenuShow }"
           @click="rightMenuShow = !rightMenuShow">
           <div class="menu-toggle-bar-top"></div>
@@ -211,7 +125,7 @@ onMounted(() => {
 
     .menu-toggle-bar-top {
       position: absolute;
-      background-color: gray;
+      background-color: rgba(111, 111, 111, 0.4);
       width: 4px;
       border-radius: 2px;
       height: 38px;
@@ -221,7 +135,7 @@ onMounted(() => {
 
     .menu-toggle-bar-bottom {
       position: absolute;
-      background-color: gray;
+      background-color: rgba(111, 111, 111, 0.4);
       width: 4px;
       border-radius: 2px;
       height: 38px;
@@ -263,7 +177,7 @@ onMounted(() => {
 
     .menu-toggle-bar-top {
       position: absolute;
-      background-color: gray;
+      background-color: rgba(111, 111, 111, 0.4);
       width: 4px;
       border-radius: 2px;
       height: 38px;
@@ -273,7 +187,7 @@ onMounted(() => {
 
     .menu-toggle-bar-bottom {
       position: absolute;
-      background-color: gray;
+      background-color: rgba(111, 111, 111, 0.4);
       width: 4px;
       border-radius: 2px;
       height: 38px;
@@ -345,7 +259,7 @@ onMounted(() => {
     .right-bar {
       position: relative;
       transition: all 0.2s ease-in;
-      width: 200px;
+      width: 250px;
       transform: translate(0);
       background-color: burlywood;
       @include right-menu-toggle-bar-style;

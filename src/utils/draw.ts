@@ -589,6 +589,7 @@ type RulerSetting = {
   globalAlpha: number;
   translateX: number;
   translateY: number;
+  scaleX: number;
 };
 /**
  * 绘制标尺
@@ -600,6 +601,7 @@ type RulerSetting = {
  * @param setting.globalAlpha 透明度
  * @param setting.translateX 平移的x轴距离
  * @param setting.translateY 平移的y轴距离
+ * @param setting.scaleX 缩放的x轴比例
  */
 export function drawRulers(
   canvas: HTMLCanvasElement,
@@ -610,6 +612,7 @@ export function drawRulers(
     globalAlpha: 1,
     translateX: 0,
     translateY: 0,
+    scaleX: 1
   }
 ) {
   const ctx: CanvasRenderingContext2D = canvas.getContext(
@@ -622,6 +625,7 @@ export function drawRulers(
     globalAlpha,
     translateX,
     translateY,
+    scaleX
   } = setting;
 
   const ruleWidth = 25;
@@ -629,7 +633,7 @@ export function drawRulers(
   // 设置透明度
   ctx.globalAlpha = globalAlpha;
   // 设置标尺属性
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
   ctx.strokeStyle = "#000";
   ctx.fillRect(0, 0, ruleWidth, canvas.height);
   ctx.fillRect(0, 0, canvas.width, ruleWidth);
@@ -637,8 +641,10 @@ export function drawRulers(
   ctx.fillStyle = "#000";
   ctx.font = "10px Arial";
   // 平移画布
+
+  const startIndex = (translateX % unitLength + ruleWidth);
   // 绘制水平标尺
-  for (let i = translateX % unitLength + ruleWidth; i < canvas.width; i += unitLength) {
+  for (let i = startIndex; i < canvas.width; i += unitLength) {
     // 绘制刻度
     const nowPos = Math.floor((i + translateX - ruleWidth) / unitLength);
     ctx.beginPath();
@@ -646,7 +652,7 @@ export function drawRulers(
     if (nowPos % 10 === 0) {
       ctx.lineTo(i, ruleWidth - majorTickLength);
       ctx.stroke();
-      ctx.fillText(nowPos * 10 + "", i, 10);
+      ctx.fillText(parseInt((nowPos * unitLength / scaleX) + '') + "", i, 10);
     } else {
       ctx.lineTo(i, ruleWidth - minorTickLength);
       ctx.stroke();
@@ -676,4 +682,70 @@ export function drawRulers(
       ctx.stroke();
     }
   }
+}
+
+
+type CanvasSetting = {
+  translateX: number;
+  translateY: number;
+  scaleX: number;
+  scaleY: number;
+};
+/**
+ * 绘制内容
+ * @param canvas 画布
+ * @param canvasSetting 画布设置
+ * @param canvasSetting.translateX 平移的x轴距离
+ * @param canvasSetting.translateY 平移的y轴距离
+ * @param canvasSetting.scaleX 缩放的x轴比例
+ * @param canvasSetting.scaleY 缩放的y轴比例
+ */
+export function drawContent(
+  canvas: HTMLCanvasElement,
+  canvasSetting: CanvasSetting = {
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+  },
+  callback: Function
+) {
+  const ctx: CanvasRenderingContext2D = canvas.getContext(
+    "2d"
+  ) as CanvasRenderingContext2D;
+  const { translateX, translateY, scaleX, scaleY } = canvasSetting;
+  // 先清空画布
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  
+  // 保存当前画布状态
+  ctx.save();
+  // 设置平移和缩放
+  ctx.translate(translateX, translateY);
+  ctx.translate(0, 0);
+  ctx.scale(scaleX, scaleY);
+
+  // 进行一些绘画操作
+  callback(canvas);
+
+  // 还原画布状态
+  ctx.restore();
+}
+
+/**
+ * 基础画板，保存只会显示基础画板中的内容
+ */
+type BaseBoardSetting = {
+  width: number; // 画布宽度
+  height: number; // 画布高度
+  left: number; // 画布x轴坐标
+  top: number; // 画布y轴坐标
+}
+export function drawBaseBoard(canvas: HTMLCanvasElement, baseBoardSetting: BaseBoardSetting) {
+  const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const { left, top, width, height } = baseBoardSetting;
+  ctx.save();
+  ctx.fillStyle = "white";
+  ctx.fillRect(left, top, width, height);
+  ctx.restore();
 }
