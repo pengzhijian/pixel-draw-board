@@ -69,7 +69,9 @@ function setMouseFun(canvas: HTMLCanvasElement) {
 onMounted(() => {
   if (bgCanvas.value) {
     baseSettingStore.baseBoardSetting.canvas = bgCanvas.value;
+    // 备份初始化数据
     baseSettingStore.baseBoardSettingStart = deepCopy(baseSettingStore.baseBoardSetting);
+    // canvas是dom元素，处理起来比较麻烦，所以直接赋值一下
     baseSettingStore.baseBoardSettingStart.canvas = bgCanvas.value;
     setMouseFun(bgCanvas.value);
   }
@@ -252,7 +254,7 @@ onMounted(() => {
     }
 
     .main-content {
-      background-color: rgb(241, 241, 241);
+      background-color: $backgroundColor;
       flex: 1;
     }
 
@@ -261,7 +263,7 @@ onMounted(() => {
       transition: all 0.2s ease-in;
       width: 250px;
       transform: translate(0);
-      background-color: burlywood;
+      background-color: $backgroundColor;
       @include right-menu-toggle-bar-style;
     }
 
@@ -279,7 +281,6 @@ onMounted(() => {
 }
 
 .canvas-bg {
-  border: 1px solid rgb(21, 172, 33);
   margin-left: 5px;
   width: 100%;
   height: 100%;

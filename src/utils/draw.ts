@@ -390,12 +390,38 @@ export function mouseToGrid(setting: {
 }
 
 /**
- * 将canvas导出为图片
+ * 将canvas中指定位置大小的方块区域导出为图片
  * @param canvas
+ * @param canvasSetting 导出区域设置
  */
-export function exportCanvasToImg(canvas: HTMLCanvasElement) {
-  // 导出 Canvas 为图片
-  const dataURL = canvas.toDataURL("image/png"); // 可以替换为 'image/jpeg' 等格式
+export function exportCanvasToImg(canvas: HTMLCanvasElement, canvasSetting?: {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}) {
+  if (!canvasSetting) {
+    canvasSetting = {
+      left: 0,
+      top: 0,
+      width: canvas.width,
+      height: canvas.height,
+    };
+  }
+  const { left, top, width, height } = canvasSetting;
+
+  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+  ctx.resetTransform();
+  // 创建一个临时的canvas，将指定区域的canvas内容导出为图片
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext("2d") as CanvasRenderingContext2D;
+  const imageData = ctx.getImageData(left, top, width, height);
+  tempCtx.putImageData(imageData, 0, 0);
+
+  // 将临时canvas内容导出为图片
+  const dataURL = tempCanvas.toDataURL("image/png"); // 可以替换为 'image/jpeg' 等格式
 
   // 创建一个链接元素
   const a = document.createElement("a");
@@ -445,6 +471,7 @@ export function uploadImgToCanvas(
  * @param gridWidth 画的像素宽度
  * @param gridHeight 画的像素高度
  * @param imgPixelData 图片像素数据
+ * @returns { rectPosArr, width, height, gridWidth, gridHeight, imageData }
  */
 export function changeImageDataToPixel(
   canvas: HTMLCanvasElement,
@@ -587,9 +614,9 @@ type RulerSetting = {
   majorTickLength: number;
   minorTickLength: number;
   globalAlpha: number;
-  translateX: number;
-  translateY: number;
-  scaleX: number;
+  startX: number;
+  startY: number;
+  ruleWidth: number;
 };
 /**
  * 绘制标尺
@@ -599,9 +626,9 @@ type RulerSetting = {
  * @param setting.majorTickLength 主要刻度的长度
  * @param setting.minorTickLength 次要刻度的长度
  * @param setting.globalAlpha 透明度
- * @param setting.translateX 平移的x轴距离
- * @param setting.translateY 平移的y轴距离
- * @param setting.scaleX 缩放的x轴比例
+ * @param setting.startX 起始横坐标
+ * @param setting.startY 起始纵坐标
+ * @param setting.ruleWidth 标尺宽度
  */
 export function drawRulers(
   canvas: HTMLCanvasElement,
@@ -610,9 +637,9 @@ export function drawRulers(
     majorTickLength: 10,
     minorTickLength: 5,
     globalAlpha: 1,
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1
+    startX: 0,
+    startY: 0,
+    ruleWidth: 25
   }
 ) {
   const ctx: CanvasRenderingContext2D = canvas.getContext(
@@ -623,12 +650,11 @@ export function drawRulers(
     majorTickLength,
     minorTickLength,
     globalAlpha,
-    translateX,
-    translateY,
-    scaleX
+    // scaleX,
+    startX,
+    startY,
+    ruleWidth
   } = setting;
-
-  const ruleWidth = 25;
 
   // 设置透明度
   ctx.globalAlpha = globalAlpha;
@@ -642,27 +668,30 @@ export function drawRulers(
   ctx.font = "10px Arial";
   // 平移画布
 
-  const startIndex = (translateX % unitLength + ruleWidth);
+  const startIndex = (startX % unitLength + ruleWidth);
   // 绘制水平标尺
   for (let i = startIndex; i < canvas.width; i += unitLength) {
     // 绘制刻度
-    const nowPos = Math.floor((i + translateX - ruleWidth) / unitLength);
+    const nowPos = Math.floor((i + startX) / unitLength);
+    ctx.save();
     ctx.beginPath();
     ctx.moveTo(i, ruleWidth);
     if (nowPos % 10 === 0) {
       ctx.lineTo(i, ruleWidth - majorTickLength);
       ctx.stroke();
-      ctx.fillText(parseInt((nowPos * unitLength / scaleX) + '') + "", i, 10);
+      ctx.fillText(parseInt((nowPos * unitLength) + '') + "", i, 10);
     } else {
       ctx.lineTo(i, ruleWidth - minorTickLength);
       ctx.stroke();
     }
+    ctx.restore();
   }
 
+  const startIndexY = (startY % unitLength + ruleWidth);
   // 绘制垂直标尺
-  for (let i = translateY % unitLength + ruleWidth; i < canvas.height; i += unitLength) {
+  for (let i = startIndexY; i < canvas.height; i += unitLength) {
     // 绘制刻度
-    const nowPos = Math.floor((i + translateY - ruleWidth) / unitLength);
+    const nowPos = Math.floor((i + startY) / unitLength);
     ctx.beginPath();
     ctx.moveTo(ruleWidth, i);
     if (nowPos % 10 === 0) {
@@ -674,7 +703,7 @@ export function drawRulers(
       ctx.translate(10, i + 2);
       // 旋转画布坐标系90度（逆时针）
       ctx.rotate(-Math.PI / 2);
-      ctx.fillText(nowPos * 10 + "", 0, 0);
+      ctx.fillText(parseInt((nowPos * unitLength) + '') + "", 0, 0);
       // 恢复到之前的状态
       ctx.restore();
     } else {
@@ -682,6 +711,7 @@ export function drawRulers(
       ctx.stroke();
     }
   }
+
 }
 
 
@@ -740,12 +770,13 @@ type BaseBoardSetting = {
   height: number; // 画布高度
   left: number; // 画布x轴坐标
   top: number; // 画布y轴坐标
+  backgroundColor: string; // 画布背景色
 }
 export function drawBaseBoard(canvas: HTMLCanvasElement, baseBoardSetting: BaseBoardSetting) {
   const ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-  const { left, top, width, height } = baseBoardSetting;
+  const { left, top, width, height, backgroundColor } = baseBoardSetting;
   ctx.save();
-  ctx.fillStyle = "white";
+  ctx.fillStyle = backgroundColor;
   ctx.fillRect(left, top, width, height);
   ctx.restore();
 }

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { drawRulers, drawContent, drawBaseBoard } from '@/utils/draw';
+import { drawRulers, drawContent, drawBaseBoard, exportCanvasToImg } from '@/utils/draw';
+import { deepCopy } from "@/utils/util";
 export const useBaseSettingsStore = defineStore("baseSetting",{
   state: () => ({
     // 通用画板设置
@@ -15,6 +16,7 @@ export const useBaseSettingsStore = defineStore("baseSetting",{
       height: 700, // 画布高度
       left: 400, // 画布左上角x位置
       top: 100, // 画布左上角y位置
+      backgroundColor: 'white', // 画板的默认颜色
     },
     baseBoardSettingStart: {
       canvas: null as HTMLCanvasElement | null,  // 画布对象
@@ -32,8 +34,8 @@ export const useBaseSettingsStore = defineStore("baseSetting",{
         
         // 画内容
         drawContent(canvas, {
-          translateX: this.baseBoardSetting.translateX + 25, // 这个25是标尺的宽度，如果标尺宽度改变这个也变
-          translateY: this.baseBoardSetting.translateY + 25,
+          translateX: this.baseBoardSetting.translateX,
+          translateY: this.baseBoardSetting.translateY,
           scaleX: this.baseBoardSetting.scaleX,
           scaleY: this.baseBoardSetting.scaleY,
         }, this.draw);
@@ -41,14 +43,16 @@ export const useBaseSettingsStore = defineStore("baseSetting",{
         // 画标尺
         if (this.baseBoardSetting.isRulersShow) {
           drawRulers(canvas, {
-            translateX: (this.baseBoardSetting.translateX - this.baseBoardSetting.left) * this.baseBoardSetting.scaleX,
-            translateY: (this.baseBoardSetting.translateY - this.baseBoardSetting.top) * this.baseBoardSetting.scaleY,
+            startX: (- this.baseBoardSetting.left - this.baseBoardSetting.translateX / this.baseBoardSetting.scaleX) * this.baseBoardSetting.scaleX,
+            // startX: -100,
+            startY: (- this.baseBoardSetting.top - this.baseBoardSetting.translateY / this.baseBoardSetting.scaleY) * this.baseBoardSetting.scaleY,
             unitLength: 10,
             majorTickLength: 10,
             minorTickLength: 5,
             globalAlpha: 1,
-            scaleX: this.baseBoardSetting.scaleX
+            ruleWidth: 25
           });
+          // console.log('真实left', (this.baseBoardSetting.left + this.baseBoardSetting.translateX / this.baseBoardSetting.scaleX) * this.baseBoardSetting.scaleX);
         }
       }
     },
@@ -62,8 +66,28 @@ export const useBaseSettingsStore = defineStore("baseSetting",{
      * 重置所有基本属性
      * */
     resetAll() {
-      this.baseBoardSetting = this.baseBoardSettingStart as any;
+      this.baseBoardSetting = deepCopy(this.baseBoardSettingStart) as any;
+      this.baseBoardSetting.canvas = this.baseBoardSettingStart.canvas;
       this.renderAll();
+    },
+    /**
+     * 将画布导出为图片
+     * */
+    exportImage() {
+      const { canvas,width, height, left, top } = this.baseBoardSetting;
+      if (canvas) {
+        // 因为有可能画板部分宽高大于画布宽高，所以需要在画布上创建一个临时的画布，将画板绘制在临时画布上，再导出临时画布为图片
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = width + left; // 临时画布宽高为画布宽高加上画板左上角坐标
+        tempCanvas.height = height + top;
+        this.draw(tempCanvas);
+        exportCanvasToImg(tempCanvas, {
+          left: left,
+          top: top,
+          width: width,
+          height: height
+        });
+      }
     }
   }
 });

@@ -15,4 +15,11 @@ export default defineConfig({
   server: {
     port: 8082
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@use "@/assets/style/index.scss" as *;`,
+      },
+    },
+  },
 });
