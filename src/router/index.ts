@@ -1,13 +1,28 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/drawBoard',
-      name: 'home',
-      component: () => import('@/views/demo/drawBoard/drawBoard.vue')
-    }
+      path: '/',
+      name: 'mainLayout',
+      component: () => import('@/layout/mainLayout.vue')
+    },
+    {
+      path: '/application',
+      name: 'application',
+      component: () => import('@/views/application/mainApplication.vue')
+    },
+    {
+      path: '/pixelDrawBoard',
+      name: 'pixelDrawBoard',
+      component: () => import('@/views/demo/pixelDrawBoard/pixelDrawBoard.vue')
+    },
+    {
+      path: '/drawBoardBase',
+      name: 'drawBoardBase',
+      component: () => import('@/views/demo/drawBoardBase/drawBoardBase.vue')
+    },
   ]
-})
+});
 
-export default router
+export default router;
